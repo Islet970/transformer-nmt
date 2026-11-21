@@ -108,6 +108,12 @@ bash scripts/prepare.sh
 /kaggle/working/prepared/data_stats.json
 ```
 
+如果 tokenizer 已存在，脚本会跳过，不会覆盖；需要强制重训时：
+
+```bash
+FORCE=1 bash scripts/prepare.sh
+```
+
 也可以手动：
 
 ```bash
