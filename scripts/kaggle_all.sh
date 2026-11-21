@@ -8,6 +8,7 @@ DATA_DIR="${DATA_DIR:-/kaggle/input/datasets/hermionegrangerislet/translationdat
 SP_MODEL="${SP_MODEL:-/kaggle/working/prepared/spm_zh_en.model}"
 RUNS_DIR="${RUNS_DIR:-runs}"
 EPOCHS="${EPOCHS:-10}"
+SKIP_EXISTING="${SKIP_EXISTING:-1}"
 
 if [ ! -f "$SP_MODEL" ]; then
   echo "tokenizer not found, preparing..."
@@ -15,7 +16,7 @@ if [ ! -f "$SP_MODEL" ]; then
 fi
 
 DATA_DIR="$DATA_DIR" SP_MODEL="$SP_MODEL" RUNS_DIR="$RUNS_DIR" EPOCHS="$EPOCHS" \
-  bash scripts/run_all.sh
+  SKIP_EXISTING="$SKIP_EXISTING" bash scripts/run_all.sh
 
 DATA_DIR="$DATA_DIR" SP_MODEL="$SP_MODEL" RUNS_DIR="$RUNS_DIR" \
   bash scripts/evaluate_all.sh

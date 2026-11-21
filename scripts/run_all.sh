@@ -9,6 +9,7 @@ SP_MODEL="${SP_MODEL:-/kaggle/working/prepared/spm_zh_en.model}"
 RUNS_DIR="${RUNS_DIR:-runs}"
 EPOCHS="${EPOCHS:-10}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
+SKIP_EXISTING="${SKIP_EXISTING:-1}"
 
 CONFIGS=(
   "configs/lstm.yaml"
@@ -21,6 +22,10 @@ CONFIGS=(
 
 for cfg in "${CONFIGS[@]}"; do
   name="$(basename "$cfg" .yaml)"
+  if [ "$SKIP_EXISTING" = "1" ] && [ -f "$RUNS_DIR/$name/summary.json" ]; then
+    echo "skip $name: $RUNS_DIR/$name/summary.json already exists"
+    continue
+  fi
   echo "============================================================"
   echo "running: $name"
   echo "============================================================"
