@@ -170,6 +170,12 @@ bash scripts/run_all.sh
 
 配置里默认 `patience: 0`，固定跑满 10 轮；如果需要早停，把对应 YAML 的 `patience` 改成 3–5。
 
+已完成（存在 `runs/<name>/summary.json`）的实验默认会跳过，避免重复训练；要强制重跑：
+
+```bash
+SKIP_EXISTING=0 bash scripts/run_all.sh
+```
+
 每组输出：
 
 ```text
