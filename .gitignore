@@ -1,0 +1,11 @@
+data/
+runs/
+*.pt
+*.pth
+*.model
+*.vocab
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+figures/
