@@ -26,7 +26,8 @@ class BahdanauAttention(nn.Module):
         ).squeeze(-1)  # [B, S]
 
         keep = src_mask.squeeze(1).squeeze(1).bool()  # [B, S]
-        scores = scores.masked_fill(~keep, -1e9)
+        # FP16 cannot represent -1e9; use the dtype minimum instead.
+        scores = scores.masked_fill(~keep, torch.finfo(scores.dtype).min)
         attn = torch.softmax(scores, dim=-1)  # [B, S]
         context = torch.bmm(attn.unsqueeze(1), enc_outputs).squeeze(1)  # [B, 2H]
         return context, attn
