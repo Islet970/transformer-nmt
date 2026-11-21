@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
 DATA_DIR="${DATA_DIR:-/kaggle/input/datasets/hermionegrangerislet/translationdataset/data}"
 SP_MODEL="${SP_MODEL:-/kaggle/working/prepared/spm_zh_en.model}"
 RUNS_DIR="${RUNS_DIR:-runs}"
