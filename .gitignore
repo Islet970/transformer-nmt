@@ -1,4 +1,8 @@
-data/
+data/*
+!data/__init__.py
+!data/prepare.py
+!data/tokenizer.py
+!data/dataset.py
 runs/
 *.pt
 *.pth
