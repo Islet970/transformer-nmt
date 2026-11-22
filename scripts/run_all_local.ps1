@@ -44,16 +44,18 @@ foreach ($cfg in $configs) {
     Write-Host "training $name"
     Write-Host ('=' * 70) -ForegroundColor DarkGray
 
-    $argv = @(
-        '-Config', $cfg,
-        '-RunName', $name,
-        '-DataDir', $DataDir,
-        '-SpModel', $SpModel,
-        '-RunsDir', $RunsDir,
-        '-Device', $Device
-    )
-    if ($Epochs -gt 0) { $argv += @('-Epochs', $Epochs) }
-    & (Join-Path $PSScriptRoot 'train_local.ps1') @argv
+    # 注意：数组 splat 是「按位置」传参，命名参数必须用哈希表 splat
+    $params = @{
+        Config  = $cfg
+        RunName = $name
+        DataDir = $DataDir
+        SpModel = $SpModel
+        RunsDir = $RunsDir
+        Device  = $Device
+    }
+    if ($Epochs -gt 0) { $params['Epochs'] = $Epochs }
+    & (Join-Path $PSScriptRoot 'train_local.ps1') @params
+    if ($LASTEXITCODE -ne 0) { throw "training $name failed with exit code $LASTEXITCODE" }
 }
 
 Write-Host "all runs finished. results in $RunsDir" -ForegroundColor Green
