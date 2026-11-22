@@ -318,7 +318,7 @@ RESUME_A=1 bash scripts/run_pair.sh transformer_improved lstm
 - GPU0 跑第一个，GPU1 跑第二个；
 - 两边各自写 `runs/<name>/train.log`；
 - 控制台日志在 `runs/<name>.console.log`；
-- 跑完自动调用 `save_model.sh`，生成 `exports/<name>.zip`。
+- 每个模型一跑完就立即调用 `save_model.sh`，生成 `exports/<name>.zip`，不等另一个模型。
 
 ## 5. 关键配置
 

@@ -39,28 +39,44 @@ if [ ! -f "$SP_MODEL" ]; then
   exit 1
 fi
 
-echo "GPU0: $A"
+# train_one.sh / save_model.sh 都通过环境变量读取这些路径。
+export DATA_DIR SP_MODEL RUNS_DIR EXPORT_DIR EPOCHS EXTRA_ARGS SAVE
+
+run_and_save() {
+  local gpu="$1"
+  local name="$2"
+  local resume="$3"
+
+  if [ "$resume" = "1" ] && [ -f "$RUNS_DIR/$name/last.pt" ]; then
+    CUDA_VISIBLE_DEVICES="$gpu" python train.py \
+      --config "configs/${name}.yaml" \
+      --data-dir "$DATA_DIR" \
+      --sp-model "$SP_MODEL" \
+      --output-dir "$RUNS_DIR" \
+      --run-name "$name" \
+      --epochs "$EPOCHS" \
+      --resume \
+      $EXTRA_ARGS
+  else
+    CUDA_VISIBLE_DEVICES="$gpu" bash scripts/train_one.sh "$name"
+  fi
+  local rc=$?
+
+  # 这个模型一结束就立即导出，不等另一个模型。
+  if [ "$SAVE" = "1" ] && { [ -f "$RUNS_DIR/$name/best.pt" ] || [ -f "$RUNS_DIR/$name/last.pt" ]; }; then
+    bash scripts/save_model.sh "$name" || true
+  fi
+  return "$rc"
+}
+
+echo "GPU0: $A (resume=$RESUME_A)"
 echo "GPU1: $B"
 echo "logs: $RUNS_DIR/$A.console.log, $RUNS_DIR/$B.console.log"
 
-if [ "$RESUME_A" = "1" ] && [ -f "$RUNS_DIR/$A/last.pt" ]; then
-  CUDA_VISIBLE_DEVICES=0 python train.py \
-    --config "configs/${A}.yaml" \
-    --data-dir "$DATA_DIR" \
-    --sp-model "$SP_MODEL" \
-    --output-dir "$RUNS_DIR" \
-    --run-name "$A" \
-    --epochs "$EPOCHS" \
-    --resume \
-    $EXTRA_ARGS > "$RUNS_DIR/$A.console.log" 2>&1 &
-else
-  CUDA_VISIBLE_DEVICES=0 bash scripts/train_one.sh "$A" \
-    > "$RUNS_DIR/$A.console.log" 2>&1 &
-fi
+run_and_save 0 "$A" "$RESUME_A" > "$RUNS_DIR/$A.console.log" 2>&1 &
 P0=$!
 
-CUDA_VISIBLE_DEVICES=1 bash scripts/train_one.sh "$B" \
-  > "$RUNS_DIR/$B.console.log" 2>&1 &
+run_and_save 1 "$B" 0 > "$RUNS_DIR/$B.console.log" 2>&1 &
 P1=$!
 
 S0=0
@@ -69,17 +85,7 @@ wait "$P0" || S0=$?
 wait "$P1" || S1=$?
 
 echo "exit: $A=$S0, $B=$S1"
-
-if [ "$SAVE" = "1" ]; then
-  if [ -f "$RUNS_DIR/$A/best.pt" ] || [ -f "$RUNS_DIR/$A/last.pt" ]; then
-    RUNS_DIR="$RUNS_DIR" EXPORT_DIR="$EXPORT_DIR" SP_MODEL="$SP_MODEL" \
-      bash scripts/save_model.sh "$A" || true
-  fi
-  if [ -f "$RUNS_DIR/$B/best.pt" ] || [ -f "$RUNS_DIR/$B/last.pt" ]; then
-    RUNS_DIR="$RUNS_DIR" EXPORT_DIR="$EXPORT_DIR" SP_MODEL="$SP_MODEL" \
-      bash scripts/save_model.sh "$B" || true
-  fi
-fi
+echo "exports: $EXPORT_DIR/$A.zip, $EXPORT_DIR/$B.zip"
 
 if [ "$S0" -ne 0 ] || [ "$S1" -ne 0 ]; then
   exit 1
