@@ -30,6 +30,7 @@ transformer-nmt/
 ├── scripts/
 │   ├── prepare.sh             # 训练 tokenizer
 │   ├── train_one.sh           # 只训练一个模型
+│   ├── run_pair.sh            # 两张 T4 并行训练两个模型
 │   ├── save_model.sh          # 导出一个模型的 zip
 │   ├── run_all.sh             # 5 组训练
 │   ├── evaluate_all.sh        # 5 组测试
@@ -303,6 +304,21 @@ python train.py \
   --run-name transformer_improved \
   --resume
 ```
+
+## 4.9 两张 T4 并行训练两个模型
+
+```bash
+# 两个都没跑过
+bash scripts/run_pair.sh transformer_improved lstm
+
+# 如果 transformer_improved 已经跑了一部分，续训它
+RESUME_A=1 bash scripts/run_pair.sh transformer_improved lstm
+```
+
+- GPU0 跑第一个，GPU1 跑第二个；
+- 两边各自写 `runs/<name>/train.log`；
+- 控制台日志在 `runs/<name>.console.log`；
+- 跑完自动调用 `save_model.sh`，生成 `exports/<name>.zip`。
 
 ## 5. 关键配置
 
