@@ -1,0 +1,17 @@
+data/*
+!data/__init__.py
+!data/prepare.py
+!data/tokenizer.py
+!data/dataset.py
+runs/
+*.pt
+*.pth
+*.model
+*.vocab
+prepared/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+figures/
+exports/
