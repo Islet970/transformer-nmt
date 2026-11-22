@@ -17,7 +17,6 @@ CONFIGS=(
   "configs/transformer_improved.yaml"
   "configs/ablation_no_pe.yaml"
   "configs/ablation_1head.yaml"
-  "configs/ablation_no_tie.yaml"
 )
 
 for cfg in "${CONFIGS[@]}"; do
@@ -39,4 +38,4 @@ for cfg in "${CONFIGS[@]}"; do
     $EXTRA_ARGS
 done
 
-echo "all 6 runs finished. results in $RUNS_DIR"
+echo "all 5 runs finished. results in $RUNS_DIR"

@@ -14,7 +14,6 @@ RUNS=(
   "transformer_improved"
   "ablation_no_pe"
   "ablation_1head"
-  "ablation_no_tie"
 )
 
 for name in "${RUNS[@]}"; do

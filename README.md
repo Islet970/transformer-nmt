@@ -5,7 +5,7 @@
 - LSTM + Bahdanau Attention 基线；
 - 基础 Transformer；
 - 改进 Transformer（weight tying + label smoothing + beam search）；
-- 3 组消融：去掉位置编码、单头注意力、去掉 weight tying；
+- 2 组消融：去掉位置编码、单头注意力；
 - BLEU / chrF、loss 曲线、长度分组评测、错误样例。
 
 > 数据只使用中文→英文（zh→en）。训练在 Kaggle GPU 上完成，本地只写代码和做 smoke test。
@@ -14,7 +14,7 @@
 
 ```text
 transformer-nmt/
-├── configs/                   # 6 组实验配置
+├── configs/                   # 5 组实验配置
 ├── data/
 │   ├── prepare.py             # 数据统计 + 训练 SentencePiece
 │   ├── tokenizer.py           # SentencePiece 封装
@@ -31,9 +31,9 @@ transformer-nmt/
 │   ├── prepare.sh             # 训练 tokenizer
 │   ├── train_one.sh           # 只训练一个模型
 │   ├── save_model.sh          # 导出一个模型的 zip
-│   ├── run_all.sh             # 6 组训练
-│   ├── evaluate_all.sh        # 6 组测试
-│   └── kaggle_all.sh          # 一键跑完 6 组 + 测试 + 图表
+│   ├── run_all.sh             # 5 组训练
+│   ├── evaluate_all.sh        # 5 组测试
+│   └── kaggle_all.sh          # 一键跑完 5 组 + 测试 + 图表
 ├── tests/test_smoke.py        # 合成数据 smoke test
 └── requirements.txt
 ```
@@ -146,9 +146,9 @@ python train.py \
 
 看日志里 loss 是否在下降、有没有 OOM。
 
-### 4.5 跑 6 组实验
+### 4.5 跑 5 组实验
 
-也可以一条命令跑完 6 组训练 + 测试 + 图表：
+也可以一条命令跑完 5 组训练 + 测试 + 图表：
 
 ```bash
 bash scripts/kaggle_all.sh
@@ -161,6 +161,7 @@ bash scripts/run_all.sh
 ```
 
 默认 10 epochs，依次跑：
+
 | 配置 | 实验 |
 |---|---|
 | `configs/lstm.yaml` | E1 LSTM + Attention |
@@ -168,7 +169,6 @@ bash scripts/run_all.sh
 | `configs/transformer_improved.yaml` | E3 改进 Transformer |
 | `configs/ablation_no_pe.yaml` | A1 去掉位置编码 |
 | `configs/ablation_1head.yaml` | A2 单头注意力 |
-| `configs/ablation_no_tie.yaml` | A3 去掉 weight tying |
 
 配置里默认 `patience: 0`，固定跑满 10 轮；如果需要早停，把对应 YAML 的 `patience` 改成 3–5。
 
@@ -261,7 +261,7 @@ python plot_attention.py \
 
 ## 4.8 一次只训练一个模型（推荐）
 
-不要一次 Commit 跑 6 组。每次只跑一个模型，跑完立刻导出：
+不要一次 Commit 跑 5 组。每次只跑一个模型，跑完立刻导出：
 
 ```bash
 # 1. 训练一个模型
@@ -346,7 +346,7 @@ warmup: 0
 - BLEU：`sacreBLEU`，`tokenize=13a`；
 - chrF：`sacreBLEU.corpus_chrf`；
 - 验证集选模型，测试集只跑一次；
-- 6 组实验使用同一数据、同一 tokenizer、同一 `max_len`、同一 batch、同一 seed。
+- 5 组实验使用同一数据、同一 tokenizer、同一 `max_len`、同一 batch、同一 seed。
 
 ## 7. 报告材料
 
