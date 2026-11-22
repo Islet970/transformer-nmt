@@ -29,6 +29,8 @@ transformer-nmt/
 ├── plot_attention.py          # 注意力热图（Transformer）
 ├── scripts/
 │   ├── prepare.sh             # 训练 tokenizer
+│   ├── train_one.sh           # 只训练一个模型
+│   ├── save_model.sh          # 导出一个模型的 zip
 │   ├── run_all.sh             # 6 组训练
 │   ├── evaluate_all.sh        # 6 组测试
 │   └── kaggle_all.sh          # 一键跑完 6 组 + 测试 + 图表
@@ -255,6 +257,51 @@ python plot_attention.py \
   --split test \
   --index 0 \
   --out figures/attention.png
+```
+
+## 4.8 一次只训练一个模型（推荐）
+
+不要一次 Commit 跑 6 组。每次只跑一个模型，跑完立刻导出：
+
+```bash
+# 1. 训练一个模型
+bash scripts/train_one.sh transformer_improved
+
+# 2. 导出成可下载的 zip
+bash scripts/save_model.sh transformer_improved
+```
+
+输出：
+
+```text
+exports/transformer_improved/
+├── model.pt                  # 轻量权重，可直接用于 evaluate.py
+├── config.json
+├── train.log
+├── loss.csv
+├── summary.json
+├── val_last.json
+├── spm_zh_en.model
+└── spm_zh_en.vocab
+exports/transformer_improved.zip
+```
+
+在 Kaggle 左侧文件浏览器下载：
+
+```text
+/kaggle/working/transformer-nmt/exports/transformer_improved.zip
+```
+
+如果模型训练中断，已有 `last.pt`，可以续训：
+
+```bash
+python train.py \
+  --config configs/transformer_improved.yaml \
+  --data-dir /kaggle/input/datasets/hermionegrangerislet/translationdataset/data \
+  --sp-model /kaggle/working/prepared/spm_zh_en.model \
+  --output-dir runs \
+  --run-name transformer_improved \
+  --resume
 ```
 
 ## 5. 关键配置
