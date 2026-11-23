@@ -1,0 +1,13 @@
+{
+  "run": "transformer",
+  "best_bleu": 8.4896,
+  "best_epoch": 9,
+  "final_bleu": 8.4896,
+  "val_chrf": 33.8125,
+  "seconds_per_epoch": 519.5,
+  "checkpoint": "transformer\\best.pt",
+  "notes": [
+    "BLEU improved in 8/9 epoch transitions",
+    "best.pt loads, 31,981,824 params, epoch 9"
+  ]
+}

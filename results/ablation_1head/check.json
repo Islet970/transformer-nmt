@@ -1,0 +1,13 @@
+{
+  "run": "ablation_1head",
+  "best_bleu": 7.7315,
+  "best_epoch": 9,
+  "final_bleu": 7.7315,
+  "val_chrf": 32.4672,
+  "seconds_per_epoch": 524.6,
+  "checkpoint": "ablation_1head\\best.pt",
+  "notes": [
+    "BLEU improved in 8/9 epoch transitions",
+    "best.pt loads, 31,981,824 params, epoch 9"
+  ]
+}
