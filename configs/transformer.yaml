@@ -1,4 +1,4 @@
-data_dir: /kaggle/input/datasets/hermionegrangerislet/translationdataset/data
+﻿data_dir: /kaggle/input/datasets/hermionegrangerislet/translationdataset/data
 sp_model: /kaggle/working/prepared/spm_zh_en.model
 max_len: 128
 batch_size: 32
@@ -12,6 +12,7 @@ dropout: 0.1
 use_pe: true
 tie_weights: false
 label_smoothing: 0.0
+norm_first: true
 epochs: 10
 lr: 1.0
 warmup: 4000
@@ -23,3 +24,4 @@ patience: 0
 output_dir: runs
 beam: 1
 length_penalty: 0.6
+

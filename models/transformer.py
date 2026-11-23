@@ -35,7 +35,8 @@ def scaled_dot_product_attention(
     scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(q.size(-1))
     if mask is not None:
         scores = scores.masked_fill(mask == 0, float("-inf"))
-    attn = torch.softmax(scores, dim=-1)
+    # Softmax in fp32: with a single head dk=256 the logits can overflow fp16 under AMP.
+    attn = torch.softmax(scores.float(), dim=-1).to(v.dtype)
     if dropout is not None:
         attn = dropout(attn)
     return torch.matmul(attn, v), attn
@@ -96,22 +97,28 @@ class FeedForward(nn.Module):
 
 
 class EncoderLayer(nn.Module):
-    def __init__(self, d_model: int, nheads: int, d_ff: int, dropout: float):
+    def __init__(self, d_model: int, nheads: int, d_ff: int, dropout: float, norm_first: bool = True):
         super().__init__()
         self.self_attn = MultiHeadAttention(d_model, nheads, dropout)
         self.ffn = FeedForward(d_model, d_ff, dropout)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
+        self.norm_first = norm_first
 
     def forward(self, x: torch.Tensor, src_mask: torch.Tensor) -> torch.Tensor:
+        if self.norm_first:
+            y = self.norm1(x)
+            x = x + self.dropout(self.self_attn(y, y, y, src_mask))
+            x = x + self.dropout(self.ffn(self.norm2(x)))
+            return x
         x = self.norm1(x + self.dropout(self.self_attn(x, x, x, src_mask)))
         x = self.norm2(x + self.dropout(self.ffn(x)))
         return x
 
 
 class DecoderLayer(nn.Module):
-    def __init__(self, d_model: int, nheads: int, d_ff: int, dropout: float):
+    def __init__(self, d_model: int, nheads: int, d_ff: int, dropout: float, norm_first: bool = True):
         super().__init__()
         self.self_attn = MultiHeadAttention(d_model, nheads, dropout)
         self.cross_attn = MultiHeadAttention(d_model, nheads, dropout)
@@ -120,6 +127,7 @@ class DecoderLayer(nn.Module):
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
+        self.norm_first = norm_first
 
     def forward(
         self,
@@ -128,6 +136,13 @@ class DecoderLayer(nn.Module):
         tgt_mask: torch.Tensor,
         src_mask: torch.Tensor,
     ) -> torch.Tensor:
+        if self.norm_first:
+            y = self.norm1(x)
+            x = x + self.dropout(self.self_attn(y, y, y, tgt_mask))
+            y = self.norm2(x)
+            x = x + self.dropout(self.cross_attn(y, memory, memory, src_mask))
+            x = x + self.dropout(self.ffn(self.norm3(x)))
+            return x
         x = self.norm1(x + self.dropout(self.self_attn(x, x, x, tgt_mask)))
         x = self.norm2(x + self.dropout(self.cross_attn(x, memory, memory, src_mask)))
         x = self.norm3(x + self.dropout(self.ffn(x)))
@@ -146,13 +161,14 @@ class Encoder(nn.Module):
         max_len: int,
         use_pe: bool = True,
         pad_id: int = 0,
+        norm_first: bool = True,
     ):
         super().__init__()
         self.d_model = d_model
         self.embed = nn.Embedding(vocab_size, d_model, padding_idx=pad_id)
         self.pe = PositionalEncoding(d_model, max_len, dropout) if use_pe else None
         self.layers = nn.ModuleList(
-            [EncoderLayer(d_model, nheads, d_ff, dropout) for _ in range(nlayers)]
+            [EncoderLayer(d_model, nheads, d_ff, dropout, norm_first) for _ in range(nlayers)]
         )
         self.norm = nn.LayerNorm(d_model)
 
@@ -177,13 +193,14 @@ class Decoder(nn.Module):
         max_len: int,
         use_pe: bool = True,
         pad_id: int = 0,
+        norm_first: bool = True,
     ):
         super().__init__()
         self.d_model = d_model
         self.embed = nn.Embedding(vocab_size, d_model, padding_idx=pad_id)
         self.pe = PositionalEncoding(d_model, max_len, dropout) if use_pe else None
         self.layers = nn.ModuleList(
-            [DecoderLayer(d_model, nheads, d_ff, dropout) for _ in range(nlayers)]
+            [DecoderLayer(d_model, nheads, d_ff, dropout, norm_first) for _ in range(nlayers)]
         )
         self.norm = nn.LayerNorm(d_model)
 
@@ -215,14 +232,15 @@ class Transformer(nn.Module):
         use_pe: bool = True,
         tie_weights: bool = False,
         pad_id: int = 0,
+        norm_first: bool = True,
     ):
         super().__init__()
         self.pad_id = pad_id
         self.encoder = Encoder(
-            vocab_size, d_model, nlayers, nheads, d_ff, dropout, max_len, use_pe, pad_id
+            vocab_size, d_model, nlayers, nheads, d_ff, dropout, max_len, use_pe, pad_id, norm_first
         )
         self.decoder = Decoder(
-            vocab_size, d_model, nlayers, nheads, d_ff, dropout, max_len, use_pe, pad_id
+            vocab_size, d_model, nlayers, nheads, d_ff, dropout, max_len, use_pe, pad_id, norm_first
         )
         self.generator = nn.Linear(d_model, vocab_size)
         if tie_weights:

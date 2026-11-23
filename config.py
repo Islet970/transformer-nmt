@@ -37,6 +37,7 @@ class Config:
     use_pe: bool = True
     tie_weights: bool = False
     label_smoothing: float = 0.0
+    norm_first: bool = True            # pre-LN; post-LN (False) is unstable at depth 4
 
     # optimization
     epochs: int = 10

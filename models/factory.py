@@ -19,6 +19,7 @@ def build_model(cfg, vocab_size: int) -> nn.Module:
             use_pe=cfg.use_pe,
             tie_weights=cfg.tie_weights,
             pad_id=0,
+            norm_first=cfg.norm_first,
         )
         model.apply(init_weights)
         if cfg.tie_weights:
