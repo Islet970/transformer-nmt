@@ -1,0 +1,13 @@
+{
+  "run": "lstm",
+  "best_bleu": 6.9911,
+  "best_epoch": 8,
+  "final_bleu": 6.7337,
+  "val_chrf": 31.9539,
+  "seconds_per_epoch": 906.9,
+  "checkpoint": "lstm\\best.pt",
+  "notes": [
+    "BLEU improved in 8/9 epoch transitions",
+    "best.pt loads, 27,170,816 params, epoch 8"
+  ]
+}
