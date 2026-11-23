@@ -25,6 +25,26 @@ def ids_to_text(tokenizer: SentencePieceTokenizer, ids: Sequence[int]) -> str:
     return tokenizer.decode([int(x) for x in ids])
 
 
+def _select_memory(memory, idx: torch.Tensor, batch: int):
+    """Index encoder memory along the batch dimension.
+
+    Works for the Transformer (a tensor) and for the LSTM (a tuple whose
+    hidden/cell states are laid out as [layers, batch, hidden]).
+    """
+    if torch.is_tensor(memory):
+        return memory.index_select(0, idx)
+    if isinstance(memory, (tuple, list)):
+        out = []
+        for item in memory:
+            if torch.is_tensor(item):
+                dim = 0 if item.size(0) == batch else 1
+                out.append(item.index_select(dim, idx))
+            else:
+                out.append(_select_memory(item, idx, batch))
+        return tuple(out) if isinstance(memory, tuple) else out
+    raise TypeError(f"unsupported memory type: {type(memory)}")
+
+
 @torch.no_grad()
 def greedy_decode_batch(
     model,
@@ -33,22 +53,45 @@ def greedy_decode_batch(
     tokenizer: SentencePieceTokenizer,
     max_len: int,
 ) -> List[List[int]]:
+    """Batched greedy decoding with early stopping.
+
+    Sentences that emit EOS are dropped from the batch, so the loop stops as
+    soon as every sentence is finished instead of always running ``max_len``
+    steps for the whole batch.  Outputs are identical to the naive version.
+    """
     model.eval()
     device = src.device
+    batch = src.size(0)
     memory = model.encode(src, src_mask)
-    ys = torch.full((src.size(0), 1), tokenizer.bos_id, dtype=torch.long, device=device)
+    ys = torch.full((batch, 1), tokenizer.bos_id, dtype=torch.long, device=device)
+    alive = torch.arange(batch, device=device)
+    finished: Dict[int, List[int]] = {}
 
     for _ in range(max_len):
-        tgt_mask = make_pad_mask(ys).to(device) & causal_mask(ys.size(1), device)
-        logits = model.decode(memory, ys, tgt_mask, src_mask)
-        next_id = logits[:, -1].argmax(dim=-1, keepdim=True)
-        ys = torch.cat([ys, next_id], dim=1)
-        if (next_id == tokenizer.eos_id).all():
-            break
+        mem = _select_memory(memory, alive, batch)
+        mask = src_mask.index_select(0, alive)
+        tgt_mask = make_pad_mask(ys) & causal_mask(ys.size(1), device)
+        logits = model.decode(mem, ys, tgt_mask, mask)
+        next_id = logits[:, -1].argmax(dim=-1)
+        ys = torch.cat([ys, next_id.unsqueeze(1)], dim=1)
+
+        eos = next_id == tokenizer.eos_id
+        if eos.any():
+            rows = eos.nonzero(as_tuple=False).squeeze(1)
+            for row, sent_id in zip(rows.tolist(), alive[rows].tolist()):
+                finished[sent_id] = ys[row].tolist()
+            keep = ~eos
+            alive = alive[keep]
+            ys = ys[keep]
+            if alive.numel() == 0:
+                break
+
+    for row, sent_id in enumerate(alive.tolist()):
+        finished[sent_id] = ys[row].tolist()
 
     results = []
-    for i in range(ys.size(0)):
-        ids = ys[i].tolist()[1:]
+    for i in range(batch):
+        ids = finished[i][1:]
         if tokenizer.eos_id in ids:
             ids = ids[: ids.index(tokenizer.eos_id)]
         results.append([x for x in ids if x not in (tokenizer.pad_id, tokenizer.bos_id, tokenizer.eos_id)])
