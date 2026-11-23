@@ -1,0 +1,33 @@
+{
+  "n": 8549,
+  "bleu": 12.0912,
+  "chrf": 35.3432,
+  "bleu_signature": "BLEU = 12.09 43.6/17.0/7.8/3.7 (BP = 1.000 ratio = 1.032 hyp_len = 169575 ref_len = 164264)",
+  "beam": 1,
+  "length_penalty": 0.6,
+  "length_buckets": {
+    "1-10": {
+      "n": 2179,
+      "bleu": 16.2617
+    },
+    "11-20": {
+      "n": 3590,
+      "bleu": 13.2935
+    },
+    "21-30": {
+      "n": 1621,
+      "bleu": 11.7616
+    },
+    "31-40": {
+      "n": 720,
+      "bleu": 10.3951
+    },
+    "40+": {
+      "n": 439,
+      "bleu": 9.387
+    }
+  },
+  "checkpoint": "runs\\ablation_1head\\best.pt",
+  "split": "test",
+  "sp_model": "prepared\\spm_zh_en.model"
+}
